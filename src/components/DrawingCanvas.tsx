@@ -24,9 +24,13 @@ const DrawingCanvas = ({ onDrawingComplete }: DrawingCanvasProps) => {
       isDrawingMode: true,
     });
 
-    // Configure drawing brush
-    canvas.freeDrawingBrush.width = brushSize;
-    canvas.freeDrawingBrush.color = brushColor;
+    // Wait for canvas to be fully initialized before configuring brush
+    setTimeout(() => {
+      if (canvas.freeDrawingBrush) {
+        canvas.freeDrawingBrush.width = brushSize;
+        canvas.freeDrawingBrush.color = brushColor;
+      }
+    }, 100);
 
     setFabricCanvas(canvas);
     toast.success("Drawing canvas ready!");
@@ -37,7 +41,8 @@ const DrawingCanvas = ({ onDrawingComplete }: DrawingCanvasProps) => {
   }, []);
 
   useEffect(() => {
-    if (!fabricCanvas) return;
+    if (!fabricCanvas || !fabricCanvas.freeDrawingBrush) return;
+    
     fabricCanvas.freeDrawingBrush.width = brushSize;
     fabricCanvas.freeDrawingBrush.color = brushColor;
   }, [brushSize, brushColor, fabricCanvas]);
