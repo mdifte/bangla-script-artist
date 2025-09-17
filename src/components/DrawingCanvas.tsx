@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from "react";
-import { Canvas as FabricCanvas } from "fabric";
+import { Canvas as FabricCanvas, PencilBrush } from "fabric";
 import { Eraser, RotateCcw, Download, Palette } from "lucide-react";
 import { toast } from "sonner";
 
@@ -24,13 +24,11 @@ const DrawingCanvas = ({ onDrawingComplete }: DrawingCanvasProps) => {
       isDrawingMode: true,
     });
 
-    // Wait for canvas to be fully initialized before configuring brush
-    setTimeout(() => {
-      if (canvas.freeDrawingBrush) {
-        canvas.freeDrawingBrush.width = brushSize;
-        canvas.freeDrawingBrush.color = brushColor;
-      }
-    }, 100);
+    // Initialize the PencilBrush - this is required in Fabric.js v6
+    const brush = new PencilBrush(canvas);
+    brush.color = brushColor;
+    brush.width = brushSize;
+    canvas.freeDrawingBrush = brush;
 
     setFabricCanvas(canvas);
     toast.success("Drawing canvas ready!");
