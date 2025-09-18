@@ -2,10 +2,53 @@ import { FileImage, Camera, PenTool } from "lucide-react";
 
 const Hero = () => {
   return (
-    <section className="relative min-h-screen bg-gradient-warm flex items-center justify-center px-4">
+    <section className="relative min-h-screen bg-gradient-warm flex items-center justify-center px-4 overflow-hidden">
       {/* Bengali-inspired decorative elements */}
       <div className="absolute top-20 left-20 w-32 h-32 bg-gradient-saffron rounded-full opacity-10 blur-3xl"></div>
       <div className="absolute bottom-40 right-20 w-40 h-40 bg-gradient-teal rounded-full opacity-10 blur-3xl"></div>
+      
+      {/* Floating Bengali Juktoborno Characters */}
+      <div className="absolute inset-0 pointer-events-none">
+        {/* Character 1: ক্ত */}
+        <div className="absolute top-20 left-10 text-6xl text-primary/10 animate-float-slow">
+          ক্ত
+        </div>
+        
+        {/* Character 2: ন্দ */}
+        <div className="absolute top-40 right-16 text-4xl text-secondary/15 animate-float-medium delay-1000">
+          ন্দ
+        </div>
+        
+        {/* Character 3: ষ্ট */}
+        <div className="absolute bottom-32 left-20 text-5xl text-accent/12 animate-float-fast delay-2000">
+          ষ্ট
+        </div>
+        
+        {/* Character 4: ক্ষ */}
+        <div className="absolute top-60 left-1/3 text-7xl text-primary/8 animate-float-slow delay-3000">
+          ক্ষ
+        </div>
+        
+        {/* Character 5: ঞ্জ */}
+        <div className="absolute bottom-20 right-32 text-4xl text-secondary/10 animate-float-medium delay-4000">
+          ঞ্জ
+        </div>
+        
+        {/* Character 6: স্ত */}
+        <div className="absolute top-32 right-1/4 text-5xl text-accent/15 animate-float-fast delay-500">
+          স্ত
+        </div>
+        
+        {/* Character 7: ম্ব */}
+        <div className="absolute bottom-60 left-1/2 text-6xl text-primary/12 animate-float-slow delay-1500">
+          ম্ব
+        </div>
+        
+        {/* Character 8: র্ক */}
+        <div className="absolute top-80 right-10 text-4xl text-secondary/8 animate-float-medium delay-2500">
+          র্ক
+        </div>
+      </div>
       
       <div className="max-w-6xl mx-auto text-center">
         {/* Main heading with Bengali aesthetic */}
