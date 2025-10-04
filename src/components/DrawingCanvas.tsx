@@ -113,24 +113,16 @@ const DrawingCanvas = ({ onDrawingComplete }: DrawingCanvasProps) => {
       const croppedCtx = croppedCanvas.getContext('2d');
       if (!croppedCtx) return;
       
+      // Fill with white background
+      croppedCtx.fillStyle = '#ffffff';
+      croppedCtx.fillRect(0, 0, width, height);
+      
       // Draw cropped region
       croppedCtx.drawImage(
         tempCanvas,
         minX, minY, width, height,
         0, 0, width, height
       );
-      
-      // Invert colors: white drawing on black background for AI
-      const croppedImageData = croppedCtx.getImageData(0, 0, width, height);
-      const croppedPixels = croppedImageData.data;
-      
-      for (let i = 0; i < croppedPixels.length; i += 4) {
-        croppedPixels[i] = 255 - croppedPixels[i];       // R
-        croppedPixels[i + 1] = 255 - croppedPixels[i + 1]; // G
-        croppedPixels[i + 2] = 255 - croppedPixels[i + 2]; // B
-      }
-      
-      croppedCtx.putImageData(croppedImageData, 0, 0);
       
       // Export as data URL
       const finalImageData = croppedCanvas.toDataURL('image/jpeg', 0.8);
