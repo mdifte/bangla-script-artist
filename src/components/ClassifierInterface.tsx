@@ -6,19 +6,37 @@ import DrawingCanvas from "./DrawingCanvas";
 import ClassificationResults from "./ClassificationResults";
 import { toast } from "sonner";
 
-// Mock classification function - replace with actual AI model
-const mockClassification = async (imageData: string) => {
-  // Simulate API delay
-  await new Promise(resolve => setTimeout(resolve, 2000));
-  
-  // Mock results for demonstration
-  return [
-    { character: "ক্ষ", confidence: 0.95, romanization: "kṣa" },
-    { character: "ত্র", confidence: 0.87, romanization: "tra" },
-    { character: "জ্ঞ", confidence: 0.73, romanization: "gy" },
-    { character: "দ্ব", confidence: 0.68, romanization: "dwa" },
-    { character: "স্থ", confidence: 0.45, romanization: "stha" },
-  ];
+// Convert data URL to Blob
+const dataURLtoBlob = (dataURL: string): Blob => {
+  const arr = dataURL.split(',');
+  const mime = arr[0].match(/:(.*?);/)?.[1] || 'image/png';
+  const bstr = atob(arr[1]);
+  let n = bstr.length;
+  const u8arr = new Uint8Array(n);
+  while (n--) {
+    u8arr[n] = bstr.charCodeAt(n);
+  }
+  return new Blob([u8arr], { type: mime });
+};
+
+// Real API classification function
+const classifyImage = async (imageFile: File | Blob, topK: number = 5) => {
+  const formData = new FormData();
+  formData.append('file', imageFile);
+
+  const response = await fetch(
+    `https://snake-positive-tightly.ngrok-free.app/predict?top_k=${topK}`,
+    {
+      method: 'POST',
+      body: formData,
+    }
+  );
+
+  if (!response.ok) {
+    throw new Error(`API request failed: ${response.status} ${response.statusText}`);
+  }
+
+  return await response.json();
 };
 
 const ClassifierInterface = () => {
@@ -27,17 +45,23 @@ const ClassifierInterface = () => {
   const [inputImage, setInputImage] = useState<string | null>(null);
   const [activeTab, setActiveTab] = useState("upload");
 
-  const handleImageProcess = async (imageData: string, source: string) => {
-    setInputImage(imageData);
+  const handleImageProcess = async (imageSource: File | Blob | string, displayImage: string) => {
+    setInputImage(displayImage);
     setIsLoading(true);
     setResults(null);
 
     try {
       toast.loading("Processing image with AI model...");
-      const classificationResults = await mockClassification(imageData);
+      
+      // Convert to Blob if it's a data URL
+      const imageFile = typeof imageSource === 'string' 
+        ? dataURLtoBlob(imageSource)
+        : imageSource;
+      
+      const classificationResults = await classifyImage(imageFile, 5);
       setResults(classificationResults);
       toast.dismiss();
-      toast.success(`Classification complete! Found ${classificationResults.length} predictions.`);
+      toast.success(`Classification complete! Top prediction: ${classificationResults.typed_juktoborno}`);
     } catch (error) {
       console.error("Classification error:", error);
       toast.dismiss();
@@ -51,17 +75,17 @@ const ClassifierInterface = () => {
     const reader = new FileReader();
     reader.onload = (e) => {
       const imageData = e.target?.result as string;
-      handleImageProcess(imageData, "upload");
+      handleImageProcess(file, imageData);
     };
     reader.readAsDataURL(file);
   };
 
   const handleCameraCapture = (imageData: string) => {
-    handleImageProcess(imageData, "camera");
+    handleImageProcess(imageData, imageData);
   };
 
   const handleDrawingComplete = (imageData: string) => {
-    handleImageProcess(imageData, "drawing");
+    handleImageProcess(imageData, imageData);
   };
 
   return (

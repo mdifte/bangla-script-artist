@@ -1,14 +1,23 @@
 import { Brain, CheckCircle, Clock } from "lucide-react";
 
 interface ClassificationResult {
-  character: string;
+  class_id: number;
+  class_name: string;
+  typed_juktoborno: string;
+  described: string;
   confidence: number;
-  romanization: string;
 }
 
 interface ClassificationResultsProps {
   isLoading: boolean;
-  results: ClassificationResult[] | null;
+  results: {
+    predicted_class_id: number;
+    predicted_class_name: string;
+    typed_juktoborno: string;
+    described: string;
+    confidence: number;
+    top_predictions: ClassificationResult[];
+  } | null;
   inputImage: string | null;
 }
 
@@ -74,9 +83,9 @@ const ClassificationResults = ({ isLoading, results, inputImage }: Classificatio
           </div>
         ) : results ? (
           <div className="space-y-4">
-            {results.map((result, index) => (
+            {results.top_predictions.map((result, index) => (
               <div
-                key={index}
+                key={result.class_id}
                 className={`p-4 rounded-lg border transition-all duration-300 ${
                   index === 0 
                     ? 'bg-primary-soft border-primary/30 shadow-soft' 
@@ -86,11 +95,11 @@ const ClassificationResults = ({ isLoading, results, inputImage }: Classificatio
                 <div className="flex items-center justify-between mb-2">
                   <div className="flex items-center gap-3">
                     <span className="text-3xl font-bold text-card-foreground">
-                      {result.character}
+                      {result.typed_juktoborno}
                     </span>
                     <div>
                       <p className="text-sm text-muted-foreground">
-                        Romanization: {result.romanization}
+                        {result.described}
                       </p>
                       {index === 0 && (
                         <span className="inline-block bg-primary text-primary-foreground text-xs px-2 py-1 rounded-full mt-1">
@@ -118,8 +127,7 @@ const ClassificationResults = ({ isLoading, results, inputImage }: Classificatio
             
             <div className="bg-accent/10 rounded-lg p-3 mt-4">
               <p className="text-sm text-accent-foreground">
-                <strong>Note:</strong> This is a demonstration interface. In a real implementation, 
-                these predictions would come from your trained AI model.
+                <strong>Note:</strong> Powered by your AI model at snake-positive-tightly.ngrok-free.app
               </p>
             </div>
           </div>
