@@ -56,14 +56,93 @@ const DrawingCanvas = ({ onDrawingComplete }: DrawingCanvasProps) => {
   const exportDrawing = () => {
     if (!fabricCanvas) return;
     
-    const imageData = fabricCanvas.toDataURL({
-      format: 'jpeg',
-      quality: 0.8,
-      multiplier: 2, // Higher resolution
-    });
+    // Get the canvas as a data URL first
+    const tempCanvas = document.createElement('canvas');
+    const tempCtx = tempCanvas.getContext('2d');
+    if (!tempCtx) return;
     
-    onDrawingComplete(imageData);
-    toast.success("Drawing exported for classification!");
+    // Export the fabric canvas to an image
+    const fabricImage = new Image();
+    fabricImage.onload = () => {
+      // Draw to temp canvas to get pixel data
+      tempCanvas.width = fabricImage.width;
+      tempCanvas.height = fabricImage.height;
+      tempCtx.drawImage(fabricImage, 0, 0);
+      
+      // Get image data to find bounding box of drawn content
+      const imageData = tempCtx.getImageData(0, 0, tempCanvas.width, tempCanvas.height);
+      const pixels = imageData.data;
+      
+      let minX = tempCanvas.width;
+      let minY = tempCanvas.height;
+      let maxX = 0;
+      let maxY = 0;
+      
+      // Find bounding box of non-white pixels
+      for (let y = 0; y < tempCanvas.height; y++) {
+        for (let x = 0; x < tempCanvas.width; x++) {
+          const i = (y * tempCanvas.width + x) * 4;
+          const r = pixels[i];
+          const g = pixels[i + 1];
+          const b = pixels[i + 2];
+          
+          // Check if pixel is not white (drawn content)
+          if (r < 250 || g < 250 || b < 250) {
+            if (x < minX) minX = x;
+            if (x > maxX) maxX = x;
+            if (y < minY) minY = y;
+            if (y > maxY) maxY = y;
+          }
+        }
+      }
+      
+      // Add small padding
+      const padding = 10;
+      minX = Math.max(0, minX - padding);
+      minY = Math.max(0, minY - padding);
+      maxX = Math.min(tempCanvas.width, maxX + padding);
+      maxY = Math.min(tempCanvas.height, maxY + padding);
+      
+      const width = maxX - minX;
+      const height = maxY - minY;
+      
+      // Create cropped canvas
+      const croppedCanvas = document.createElement('canvas');
+      croppedCanvas.width = width;
+      croppedCanvas.height = height;
+      const croppedCtx = croppedCanvas.getContext('2d');
+      if (!croppedCtx) return;
+      
+      // Draw cropped region
+      croppedCtx.drawImage(
+        tempCanvas,
+        minX, minY, width, height,
+        0, 0, width, height
+      );
+      
+      // Invert colors: white drawing on black background for AI
+      const croppedImageData = croppedCtx.getImageData(0, 0, width, height);
+      const croppedPixels = croppedImageData.data;
+      
+      for (let i = 0; i < croppedPixels.length; i += 4) {
+        croppedPixels[i] = 255 - croppedPixels[i];       // R
+        croppedPixels[i + 1] = 255 - croppedPixels[i + 1]; // G
+        croppedPixels[i + 2] = 255 - croppedPixels[i + 2]; // B
+      }
+      
+      croppedCtx.putImageData(croppedImageData, 0, 0);
+      
+      // Export as data URL
+      const finalImageData = croppedCanvas.toDataURL('image/jpeg', 0.8);
+      onDrawingComplete(finalImageData);
+      toast.success("Drawing exported for classification!");
+    };
+    
+    fabricImage.src = fabricCanvas.toDataURL({
+      format: 'png',
+      quality: 1.0,
+      multiplier: 2,
+    });
   };
 
   const toggleDrawingMode = () => {
