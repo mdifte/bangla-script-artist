@@ -56,51 +56,14 @@ const DrawingCanvas = ({ onDrawingComplete }: DrawingCanvasProps) => {
   const exportDrawing = () => {
     if (!fabricCanvas) return;
     
-    // Create a temporary canvas for color inversion
-    const tempCanvas = document.createElement('canvas');
-    const tempCtx = tempCanvas.getContext('2d');
-    if (!tempCtx) return;
-    
-    // Export original canvas to get the drawing
-    const originalData = fabricCanvas.toDataURL({
-      format: 'png',
-      quality: 1.0,
-      multiplier: 2,
+    const imageData = fabricCanvas.toDataURL({
+      format: 'jpeg',
+      quality: 0.8,
+      multiplier: 2, // Higher resolution
     });
     
-    // Create an image from the original data
-    const img = new Image();
-    img.onload = () => {
-      // Set temp canvas size to match the image
-      tempCanvas.width = img.width;
-      tempCanvas.height = img.height;
-      
-      // Draw the original image
-      tempCtx.drawImage(img, 0, 0);
-      
-      // Get image data to invert colors
-      const imageData = tempCtx.getImageData(0, 0, tempCanvas.width, tempCanvas.height);
-      const data = imageData.data;
-      
-      // Invert colors: white becomes black, black becomes white
-      for (let i = 0; i < data.length; i += 4) {
-        data[i] = 255 - data[i];       // Red
-        data[i + 1] = 255 - data[i + 1]; // Green
-        data[i + 2] = 255 - data[i + 2]; // Blue
-        // Alpha channel (data[i + 3]) remains unchanged
-      }
-      
-      // Put inverted data back
-      tempCtx.putImageData(imageData, 0, 0);
-      
-      // Get the inverted image as data URL
-      const invertedData = tempCanvas.toDataURL('image/jpeg', 0.9);
-      
-      onDrawingComplete(invertedData);
-      toast.success("Drawing exported for classification!");
-    };
-    
-    img.src = originalData;
+    onDrawingComplete(imageData);
+    toast.success("Drawing exported for classification!");
   };
 
   const toggleDrawingMode = () => {
