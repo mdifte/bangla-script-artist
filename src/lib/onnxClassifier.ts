@@ -38,6 +38,9 @@ export const loadModel = async (onProgress?: (progress: number) => void): Promis
   if (modelSession) return;
   
   try {
+    // Configure WASM paths
+    ort.env.wasm.wasmPaths = 'https://cdn.jsdelivr.net/npm/onnxruntime-web@1.23.0/dist/';
+    
     // Simulate progress for model loading
     onProgress?.(0.3);
     
