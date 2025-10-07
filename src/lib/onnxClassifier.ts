@@ -73,8 +73,8 @@ const preprocessImage = async (imageData: string): Promise<ort.Tensor> => {
         return;
       }
       
-      // EfficientNet-B0 expects 224x224 input
-      const targetSize = 224;
+      // Model expects 256x256 grayscale input
+      const targetSize = 256;
       canvas.width = targetSize;
       canvas.height = targetSize;
       
@@ -85,17 +85,20 @@ const preprocessImage = async (imageData: string): Promise<ort.Tensor> => {
       const imageData = ctx.getImageData(0, 0, targetSize, targetSize);
       const { data } = imageData;
       
-      // Convert to float32 and normalize [0, 255] -> [0, 1]
-      const float32Data = new Float32Array(3 * targetSize * targetSize);
+      // Convert to grayscale and normalize [0, 255] -> [0, 1]
+      const float32Data = new Float32Array(targetSize * targetSize);
       
       for (let i = 0; i < targetSize * targetSize; i++) {
-        float32Data[i] = data[i * 4] / 255.0; // R
-        float32Data[targetSize * targetSize + i] = data[i * 4 + 1] / 255.0; // G
-        float32Data[targetSize * targetSize * 2 + i] = data[i * 4 + 2] / 255.0; // B
+        // Convert RGB to grayscale using luminosity method
+        const r = data[i * 4];
+        const g = data[i * 4 + 1];
+        const b = data[i * 4 + 2];
+        const grayscale = 0.299 * r + 0.587 * g + 0.114 * b;
+        float32Data[i] = grayscale / 255.0;
       }
       
-      // Create tensor [1, 3, 224, 224]
-      const tensor = new ort.Tensor('float32', float32Data, [1, 3, targetSize, targetSize]);
+      // Create tensor [1, 1, 256, 256]
+      const tensor = new ort.Tensor('float32', float32Data, [1, 1, targetSize, targetSize]);
       resolve(tensor);
     };
     
