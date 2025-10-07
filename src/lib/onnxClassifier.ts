@@ -140,7 +140,11 @@ export const classifyImage = async (imageData: string, topK: number = 5) => {
   });
   
   return {
+    predicted_class_id: topPredictions[0].class_id,
+    predicted_class_name: topPredictions[0].class_name,
     typed_juktoborno: topPredictions[0].typed_juktoborno,
-    predictions: topPredictions
+    described: topPredictions[0].description,
+    confidence: topPredictions[0].confidence,
+    top_predictions: topPredictions
   };
 };
