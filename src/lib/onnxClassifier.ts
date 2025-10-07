@@ -10,11 +10,17 @@ export interface ClassMapping {
 let modelSession: ort.InferenceSession | null = null;
 let classMappings: ClassMapping[] = [];
 
+// Get the base URL from Vite's configuration
+const getAssetPath = (path: string) => {
+  const base = import.meta.env.BASE_URL || '/';
+  return `${base}${path}`.replace(/\/+/g, '/');
+};
+
 // Parse CSV mappings
 export const loadMappings = async (): Promise<ClassMapping[]> => {
   if (classMappings.length > 0) return classMappings;
   
-  const response = await fetch('/models/mappings.csv');
+  const response = await fetch(getAssetPath('models/mappings.csv'));
   const text = await response.text();
   const lines = text.split('\n').slice(1); // Skip header
   
@@ -50,7 +56,10 @@ export const loadModel = async (onProgress?: (progress: number) => void): Promis
     // Simulate progress for model loading
     onProgress?.(0.3);
     
-    modelSession = await ort.InferenceSession.create('/models/efficientnet_b0_best.onnx', {
+    const modelPath = getAssetPath('models/efficientnet_b0_best.onnx');
+    console.log('Loading model from:', modelPath);
+    
+    modelSession = await ort.InferenceSession.create(modelPath, {
       executionProviders: ['wasm'],
     });
     
