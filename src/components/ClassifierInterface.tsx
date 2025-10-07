@@ -1,64 +1,48 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Progress } from "@/components/ui/progress";
 import ImageUpload from "./ImageUpload";
 import CameraCapture from "./CameraCapture";
 import DrawingCanvas from "./DrawingCanvas";
 import ClassificationResults from "./ClassificationResults";
 import { toast } from "sonner";
+import { loadModel, classifyImage } from "@/lib/onnxClassifier";
 
-// Convert data URL to Blob
-const dataURLtoBlob = (dataURL: string): Blob => {
-  const arr = dataURL.split(',');
-  const mime = arr[0].match(/:(.*?);/)?.[1] || 'image/png';
-  const bstr = atob(arr[1]);
-  let n = bstr.length;
-  const u8arr = new Uint8Array(n);
-  while (n--) {
-    u8arr[n] = bstr.charCodeAt(n);
-  }
-  return new Blob([u8arr], { type: mime });
-};
-
-// Real API classification function
-const classifyImage = async (imageFile: File | Blob, topK: number = 5) => {
-  const formData = new FormData();
-  formData.append('file', imageFile);
-
-  const response = await fetch(
-    `https://snake-positive-tightly.ngrok-free.app/predict?top_k=${topK}`,
-    {
-      method: 'POST',
-      body: formData,
-    }
-  );
-
-  if (!response.ok) {
-    throw new Error(`API request failed: ${response.status} ${response.statusText}`);
-  }
-
-  return await response.json();
-};
 
 const ClassifierInterface = () => {
   const [isLoading, setIsLoading] = useState(false);
   const [results, setResults] = useState(null);
   const [inputImage, setInputImage] = useState<string | null>(null);
   const [activeTab, setActiveTab] = useState("upload");
+  const [modelLoading, setModelLoading] = useState(true);
+  const [loadingProgress, setLoadingProgress] = useState(0);
 
-  const handleImageProcess = async (imageSource: File | Blob | string, displayImage: string) => {
-    setInputImage(displayImage);
+  useEffect(() => {
+    const initModel = async () => {
+      try {
+        await loadModel((progress) => {
+          setLoadingProgress(progress * 100);
+        });
+        toast.success("AI model loaded and ready!");
+        setModelLoading(false);
+      } catch (error) {
+        console.error("Failed to load model:", error);
+        toast.error("Failed to load AI model");
+        setModelLoading(false);
+      }
+    };
+    initModel();
+  }, []);
+
+  const handleImageProcess = async (imageData: string) => {
+    setInputImage(imageData);
     setIsLoading(true);
     setResults(null);
 
     try {
       toast.loading("Processing image with AI model...");
       
-      // Convert to Blob if it's a data URL
-      const imageFile = typeof imageSource === 'string' 
-        ? dataURLtoBlob(imageSource)
-        : imageSource;
-      
-      const classificationResults = await classifyImage(imageFile, 5);
+      const classificationResults = await classifyImage(imageData, 5);
       setResults(classificationResults);
       toast.dismiss();
       toast.success(`Classification complete! Top prediction: ${classificationResults.typed_juktoborno}`);
@@ -75,18 +59,39 @@ const ClassifierInterface = () => {
     const reader = new FileReader();
     reader.onload = (e) => {
       const imageData = e.target?.result as string;
-      handleImageProcess(file, imageData);
+      handleImageProcess(imageData);
     };
     reader.readAsDataURL(file);
   };
 
   const handleCameraCapture = (imageData: string) => {
-    handleImageProcess(imageData, imageData);
+    handleImageProcess(imageData);
   };
 
   const handleDrawingComplete = (imageData: string) => {
-    handleImageProcess(imageData, imageData);
+    handleImageProcess(imageData);
   };
+
+  if (modelLoading) {
+    return (
+      <section id="classifier" className="min-h-screen bg-background py-16 px-4 flex items-center justify-center">
+        <div className="max-w-md w-full space-y-6">
+          <div className="text-center">
+            <h2 className="text-3xl font-bold text-foreground mb-2">
+              Loading AI Model
+            </h2>
+            <p className="text-muted-foreground mb-6">
+              Preparing the Bengali character classifier...
+            </p>
+          </div>
+          <Progress value={loadingProgress} className="w-full h-3" />
+          <p className="text-center text-sm text-muted-foreground">
+            {Math.round(loadingProgress)}% complete
+          </p>
+        </div>
+      </section>
+    );
+  }
 
   return (
     <section id="classifier" className="min-h-screen bg-background py-16 px-4">

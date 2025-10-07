@@ -2,6 +2,7 @@ import { useEffect } from "react";
 import Hero from "@/components/Hero";
 import ClassifierInterface from "@/components/ClassifierInterface";
 import Footer from "@/components/Footer";
+import FloatingCharacters from "@/components/FloatingCharacters";
 
 const Index = () => {
   useEffect(() => {
@@ -46,10 +47,13 @@ const Index = () => {
   }, []);
 
   return (
-    <main className="min-h-screen">
-      <Hero />
-      <ClassifierInterface />
-      <Footer />
+    <main className="min-h-screen relative">
+      <FloatingCharacters />
+      <div className="relative z-10">
+        <Hero />
+        <ClassifierInterface />
+        <Footer />
+      </div>
     </main>
   );
 };
