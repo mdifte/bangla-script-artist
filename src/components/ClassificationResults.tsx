@@ -4,7 +4,8 @@ interface ClassificationResult {
   class_id: number;
   class_name: string;
   typed_juktoborno: string;
-  described: string;
+  description: string;
+  folder: string;
   confidence: number;
 }
 
@@ -85,7 +86,7 @@ const ClassificationResults = ({ isLoading, results, inputImage }: Classificatio
           <div className="space-y-4">
             {results.top_predictions.map((result, index) => (
               <div
-                key={result.class_id}
+                key={`${result.class_id}-${index}`}
                 className={`p-4 rounded-lg border transition-all duration-300 ${
                   index === 0 
                     ? 'bg-primary-soft border-primary/30 shadow-soft' 
@@ -93,13 +94,16 @@ const ClassificationResults = ({ isLoading, results, inputImage }: Classificatio
                 }`}
               >
                 <div className="flex items-center justify-between mb-2">
-                  <div className="flex items-center gap-3">
-                    <span className="text-3xl font-bold text-card-foreground">
+                  <div className="flex items-center gap-3 flex-1">
+                    <span className="text-4xl font-bold text-card-foreground">
                       {result.typed_juktoborno}
                     </span>
-                    <div>
-                      <p className="text-sm text-muted-foreground">
-                        {result.described}
+                    <div className="flex-1">
+                      <p className="text-sm font-medium text-card-foreground">
+                        {result.description}
+                      </p>
+                      <p className="text-xs text-muted-foreground mt-1">
+                        Class ID: {result.class_id} | Folder: {result.folder}
                       </p>
                       {index === 0 && (
                         <span className="inline-block bg-primary text-primary-foreground text-xs px-2 py-1 rounded-full mt-1">

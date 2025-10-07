@@ -62,12 +62,37 @@ This project is built with:
 
 ## How can I deploy this project?
 
+### Option 1: GitHub Pages (Recommended)
+
+This project is configured to automatically deploy to GitHub Pages using GitHub Actions.
+
+**Setup Steps:**
+
+1. Go to your GitHub repository settings
+2. Navigate to **Settings > Pages**
+3. Under **Build and deployment**, select:
+   - **Source**: GitHub Actions
+4. Push to the `main` branch, and the workflow will automatically build and deploy your app
+
+Your app will be available at: `https://mdifte.github.io/bangla-script-artist/`
+
+**Manual Deployment:**
+
+You can also trigger deployment manually:
+- Go to **Actions** tab in your GitHub repository
+- Select the "Deploy to GitHub Pages" workflow
+- Click "Run workflow"
+
+### Option 2: Lovable
+
 Simply open [Lovable](https://lovable.dev/projects/298133ed-68b8-48cb-ad31-7ca0d1004b7e) and click on Share -> Publish.
 
-## Can I connect a custom domain to my Lovable project?
+## Can I connect a custom domain?
 
-Yes, you can!
+Yes, you can connect a custom domain to your GitHub Pages deployment:
 
-To connect a domain, navigate to Project > Settings > Domains and click Connect Domain.
+1. Go to **Settings > Pages** in your repository
+2. Under **Custom domain**, enter your domain
+3. Configure your DNS provider to point to GitHub Pages
 
-Read more here: [Setting up a custom domain](https://docs.lovable.dev/features/custom-domain#custom-domain)
+Read more: [GitHub Pages Custom Domain](https://docs.github.com/en/pages/configuring-a-custom-domain-for-your-github-pages-site)

@@ -24,11 +24,17 @@ export const loadMappings = async (): Promise<ClassMapping[]> => {
       const [classNumber, typedJuktoborno, described, folder] = line.split(',');
       return {
         classNumber: parseInt(classNumber),
-        typedJuktoborno: typedJuktoborno.trim(),
-        described: described.trim(),
-        folder: folder.trim()
+        typedJuktoborno: typedJuktoborno?.trim() || '',
+        described: described?.trim() || '',
+        folder: folder?.trim() || ''
       };
     });
+  
+  console.log('Loaded mappings:', classMappings.length);
+  console.log('Sample mappings:');
+  classMappings.slice(0, 10).forEach(m => {
+    console.log(`  Class ${m.classNumber} [Folder ${m.folder}]: ${m.typedJuktoborno} (${m.described})`);
+  });
   
   return classMappings;
 };
@@ -73,8 +79,8 @@ const preprocessImage = async (imageData: string): Promise<ort.Tensor> => {
         return;
       }
       
-      // Model expects 256x256 grayscale input
-      const targetSize = 256;
+      // Model expects 128x128 grayscale input
+      const targetSize = 128;
       canvas.width = targetSize;
       canvas.height = targetSize;
       
@@ -97,7 +103,7 @@ const preprocessImage = async (imageData: string): Promise<ort.Tensor> => {
         float32Data[i] = grayscale / 255.0;
       }
       
-      // Create tensor [1, 1, 256, 256]
+      // Create tensor [1, 1, 128, 128]
       const tensor = new ort.Tensor('float32', float32Data, [1, 1, targetSize, targetSize]);
       resolve(tensor);
     };
@@ -105,6 +111,14 @@ const preprocessImage = async (imageData: string): Promise<ort.Tensor> => {
     img.onerror = () => reject(new Error('Failed to load image'));
     img.src = imageData;
   });
+};
+
+// Softmax function to convert logits to probabilities
+const softmax = (logits: Float32Array): Float32Array => {
+  const maxLogit = Math.max(...Array.from(logits));
+  const expScores = logits.map(logit => Math.exp(logit - maxLogit));
+  const sumExpScores = expScores.reduce((a, b) => a + b, 0);
+  return new Float32Array(expScores.map(score => score / sumExpScores));
 };
 
 // Run inference
@@ -122,22 +136,72 @@ export const classifyImage = async (imageData: string, topK: number = 5) => {
   
   // Get output tensor
   const output = results[modelSession.outputNames[0]];
-  const predictions = output.data as Float32Array;
+  const rawPredictions = output.data as Float32Array;
+  
+  // Debug: Log raw predictions (logits)
+  console.log('=== ONNX Model Output Debug ===');
+  console.log('Model output shape:', output.dims);
+  console.log('Total classes:', rawPredictions.length);
+  console.log('Total mappings loaded:', classMappings.length);
+  console.log('Output type:', output.type);
+  
+  // Check if we need to apply softmax (if values are logits)
+  const maxValue = Math.max(...Array.from(rawPredictions));
+  const minValue = Math.min(...Array.from(rawPredictions));
+  const sumValues = Array.from(rawPredictions).reduce((a, b) => a + b, 0);
+  
+  console.log('\nRaw output statistics:');
+  console.log(`  Min value: ${minValue.toFixed(4)}`);
+  console.log(`  Max value: ${maxValue.toFixed(4)}`);
+  console.log(`  Sum of values: ${sumValues.toFixed(4)}`);
+  
+  // Apply softmax if values don't sum to ~1 (indicating they're logits, not probabilities)
+  let predictions: Float32Array;
+  if (Math.abs(sumValues - 1.0) > 0.1) {
+    console.log('  → Applying softmax (values appear to be logits)');
+    predictions = softmax(rawPredictions);
+  } else {
+    console.log('  → Using raw values (already normalized)');
+    predictions = rawPredictions;
+  }
   
   // Get top K predictions
   const indexed = Array.from(predictions).map((score, idx) => ({ score, idx }));
   indexed.sort((a, b) => b.score - a.score);
   
-  const topPredictions = indexed.slice(0, topK).map(({ score, idx }) => {
+  // Debug: Show top 10 raw predictions
+  console.log('\nTop 10 raw predictions (class number from model: confidence):');
+  indexed.slice(0, 10).forEach(({ idx, score }) => {
     const mapping = classMappings.find(m => m.classNumber === idx);
+    console.log(`  Class ${idx}: ${(score * 100).toFixed(2)}% ${mapping ? `→ ${mapping.typedJuktoborno} [Folder ${mapping.folder}]` : '(no mapping)'}`);
+  });
+  
+  const topPredictions = indexed.slice(0, topK).map(({ score, idx }) => {
+    // Model outputs class numbers (0, 1, 10, 100, etc.)
+    // Find the mapping by class number
+    const mapping = classMappings.find(m => m.classNumber === idx);
+    
+    // Debug: Log mapping details
+    if (!mapping) {
+      console.warn(`⚠️ No mapping found for class ${idx}`);
+    }
+    
     return {
       class_id: idx,
       class_name: mapping?.typedJuktoborno || `Class ${idx}`,
       typed_juktoborno: mapping?.typedJuktoborno || `Class ${idx}`,
-      description: mapping?.described || '',
+      description: mapping?.described || 'No description',
+      folder: mapping?.folder || 'N/A',
       confidence: score
     };
   });
+  
+  // Debug: Show mapped predictions
+  console.log('\nTop predictions with mappings:');
+  topPredictions.forEach((pred, i) => {
+    console.log(`  ${i + 1}. [Class ${pred.class_id}, Folder ${pred.folder}] ${pred.typed_juktoborno} (${pred.description}) - ${(pred.confidence * 100).toFixed(2)}%`);
+  });
+  console.log('=== End Debug ===\n');
   
   return {
     predicted_class_id: topPredictions[0].class_id,
