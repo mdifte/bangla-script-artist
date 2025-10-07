@@ -15,6 +15,7 @@ const CameraCapture = ({ onImageCapture }: CameraCaptureProps) => {
 
   const startCamera = useCallback(async () => {
     try {
+      console.log("Requesting camera access...");
       const stream = await navigator.mediaDevices.getUserMedia({
         video: { 
           width: { ideal: 1280 },
@@ -23,15 +24,33 @@ const CameraCapture = ({ onImageCapture }: CameraCaptureProps) => {
         }
       });
       
+      console.log("Camera stream obtained:", stream);
+      
       if (videoRef.current) {
-        videoRef.current.srcObject = stream;
+        const video = videoRef.current;
+        video.srcObject = stream;
         streamRef.current = stream;
+        
+        // Wait for video to be ready
+        await new Promise<void>((resolve) => {
+          video.onloadedmetadata = () => {
+            console.log("Video metadata loaded");
+            video.play().then(() => {
+              console.log("Video playing");
+              resolve();
+            }).catch((err) => {
+              console.error("Error playing video:", err);
+              resolve();
+            });
+          };
+        });
+        
         setIsActive(true);
         toast.success("Camera started successfully!");
       }
     } catch (error) {
       console.error("Error accessing camera:", error);
-      toast.error("Failed to access camera. Please check permissions.");
+      toast.error(`Failed to access camera: ${error instanceof Error ? error.message : 'Please check permissions'}`);
     }
   }, []);
 
@@ -98,12 +117,14 @@ const CameraCapture = ({ onImageCapture }: CameraCaptureProps) => {
             </div>
           ) : (
             <div className="space-y-4">
-              <div className="relative bg-black rounded-lg overflow-hidden">
+              <div className="relative bg-black rounded-lg overflow-hidden min-h-64">
                 <video
                   ref={videoRef}
                   autoPlay
                   playsInline
+                  muted
                   className="w-full h-64 object-cover"
+                  style={{ transform: 'scaleX(1)' }}
                 />
                 <canvas ref={canvasRef} className="hidden" />
               </div>
